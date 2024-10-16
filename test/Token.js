@@ -66,8 +66,7 @@ describe('Token', () => {
       })
 
       it('emits a Transfer event', async () => {
-        await expect(transaction).to.emit(token, 'Transfer').
-          withArgs(deployer.address, receiver.address, amount)
+        await expect(transaction).to.emit(token, 'Transfer').withArgs(deployer.address, receiver.address, amount)
       })
 
     })
