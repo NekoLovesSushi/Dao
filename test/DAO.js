@@ -8,17 +8,46 @@ const tokens = (n) => {
 const ether = tokens
 
 describe('DAO', () => {
-let token, dao, accounts, deployer, funder
+let token, dao, 
+    accounts, deployer, 
+    funder, investor1, 
+    investor2, investor3,
+    investor4, investor5, 
+    recipient, user,
+    transaction
 
   beforeEach(async () => {
     //Set up accounts
     accounts = await ethers.getSigners()
     deployer = accounts[0]
-    funder = accounts [1]
-
+    funder = accounts[1]
+    investor1 = accounts[2]
+    investor2 = accounts[3]
+    investor3 = accounts[4]
+    investor4 = accounts[5]
+    investor5 = accounts[6]
+    recipient = accounts[7]
+    user = accounts[8]
+    
     //Deploy Token
     const Token = await ethers.getContractFactory('Token')
     token = await Token.deploy('Dapp University', 'DAPP', '1000000')
+
+    //Send 20% of the tokens to to each investor
+    transaction = await token.connect(deployer).transfer(investor1.address, tokens(200000))
+    await transaction.wait()
+
+    transaction = await token.connect(deployer).transfer(investor2.address, tokens(200000))
+    await transaction.wait()
+
+    transaction = await token.connect(deployer).transfer(investor3.address, tokens(200000))
+    await transaction.wait()
+
+    transaction = await token.connect(deployer).transfer(investor4.address, tokens(200000))
+    await transaction.wait()
+
+    transaction = await token.connect(deployer).transfer(investor5.address, tokens(200000))
+    await transaction.wait()
 
     //Deploy DAO
     const DAO = await ethers.getContractFactory('DAO')
@@ -41,6 +70,52 @@ let token, dao, accounts, deployer, funder
     it('Returns quorum', async () => {
       expect(await dao.quorum()).to.equal('500000000000000000000001')
     })
+  })
+
+  describe('Proposal Creation', () => {
+    let transaction, result
+
+    describe('Success', () => {
+
+        beforeEach(async () => {
+          transaction = await dao.connect(investor1).createProposal('Proposal 1', ether(100), recipient.address)
+          result = await transaction.wait()
+        })
+
+        it('Updates proposal account', async () => {
+        expect(await dao.proposalCount()).to.equal(1)
+        })
+
+        it('Updates proposal mapping', async () => {
+        const proposal = await dao.proposals(1)
+
+        expect(proposal.id).to.equal(1)
+        expect(proposal.amount).to.equal(ether(100))
+        expect(proposal.recipient).to.equal(recipient.address)
+        })
+
+        it('Emits a proposal event', async () => {
+        await expect(transaction).to.emit(dao, 'Propose').withArgs(1, ether(100), recipient.address, investor1.address)
+        })
+
+    })
+    
+    describe('Failure', () => {   
+        
+        it('Rejects invalid amount', async () => {
+        await expect(dao.connect(investor1).createProposal('Proposal 1', ether(1000), recipient.address)).to.be.reverted
+        })
+
+        it('Rejects non-investor', async () => {
+        await expect(dao.connect(user).createProposal('Proposal 1', ether(100), recipient.address)).to.be.reverted
+        })
+
+        it('', async () => {
+        
+        })
+
+    })
+
   })
 
 })
